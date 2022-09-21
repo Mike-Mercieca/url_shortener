@@ -23,8 +23,6 @@ hashids = Hashids(min_length=4, salt=app.config['SECRET_KEY'])
 @app.route('/', methods =['GET', 'POST'])
 def index():
     connection = get_db_connection()
-    print(connection)
-    print(db_path)
 
     if request.method == 'POST':
         url = request.form['url']
@@ -39,7 +37,23 @@ def index():
         return render_template('index.html', short_url = short_url)
     
     return render_template('index.html')
-    
+
+@app.route('/<id>')
+def url_redirect(id):
+    connection = get_db_connection()
+
+    original_id = hashids.decode(id)
+    if original_id:
+        original_id = original_id[0]
+        url_data = connection.execute('SELECT original_url, clicks FROM urls'
+                        ' WHERE id = (?)', (original_id,)
+                        ).fetchone()
+        print(url_data)
+        original_url = url_data['original_url']
+        print(original_url)
+        return redirect(original_url)
+    else:
+        return redirect(url_for('index'))   
 
 if __name__ == '__main__':
     app.run(debug=True)
